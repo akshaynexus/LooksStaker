@@ -28,14 +28,14 @@ contract LooksStakerStrategy is BaseStrategy {
     IUniswapRouter public router = IUniswapRouter(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
 
     IERC20 weth = IERC20(router.WETH());
-    event ProfitReported(uint profit);
-    event WithdrewMore(uint more);
+    event ProfitReported(uint256 profit);
+    event WithdrewMore(uint256 more);
 
     constructor(address _vault) public BaseStrategy(_vault) {
         //Approve staking contract to spend LOOKS tokens
         want.safeApprove(address(staker), type(uint256).max);
         //Approve weth to swap for looks on univ2 router
-        weth.safeApprove(address(router),type(uint256).max);
+        weth.safeApprove(address(router), type(uint256).max);
     }
 
     function name() external view override returns (string memory) {
@@ -52,7 +52,7 @@ contract LooksStakerStrategy is BaseStrategy {
         return staker.calculateSharesValueInLOOKS(address(this));
     }
 
-    function _convertLooksToShares(uint _looksAmt) internal view returns (uint) {
+    function _convertLooksToShares(uint256 _looksAmt) internal view returns (uint256) {
         //Get total shares
         uint256 totalShares = staker.totalShares();
         // Retrieve amount staked
@@ -72,11 +72,11 @@ contract LooksStakerStrategy is BaseStrategy {
         (uint256 totalAmountStaked, ) = distributor.userInfo(address(staker));
 
         // Adjust for pending rewards
-        uint totalRewardsPending = distributor.calculatePendingRewards(address(staker));
+        uint256 totalRewardsPending = distributor.calculatePendingRewards(address(staker));
 
-        uint stakedAmount = balanceOfStake();
-        uint scaler = 1e9;
-        return stakedAmount == 0 ? 0 : (((stakedAmount * scaler)/ totalAmountStaked)  * totalRewardsPending) / scaler; 
+        uint256 stakedAmount = balanceOfStake();
+        uint256 scaler = 1e9;
+        return stakedAmount == 0 ? 0 : (((stakedAmount * scaler) / totalAmountStaked) * totalRewardsPending) / scaler;
     }
 
     function _getBuyPath() internal view returns (address[] memory _path) {
@@ -85,10 +85,10 @@ contract LooksStakerStrategy is BaseStrategy {
         _path[1] = address(want);
     }
 
-    function _convertToLooks(uint wethAmount) internal view returns (uint) {
-        if(wethAmount == 0) return wethAmount;
+    function _convertToLooks(uint256 wethAmount) internal view returns (uint256) {
+        if (wethAmount == 0) return wethAmount;
         address[] memory _buyPath = _getBuyPath();
-        router.getAmountsOut(wethAmount, _buyPath)[_buyPath.length- 1];
+        router.getAmountsOut(wethAmount, _buyPath)[_buyPath.length - 1];
     }
 
     function pendingWETH() public view returns (uint256) {
@@ -104,7 +104,7 @@ contract LooksStakerStrategy is BaseStrategy {
     }
 
     function _deposit(uint256 _depositAmount) internal {
-       staker.deposit(_depositAmount, true);
+        staker.deposit(_depositAmount, true);
     }
 
     function _withdraw(uint256 _withdrawAmount) internal {
@@ -112,8 +112,10 @@ contract LooksStakerStrategy is BaseStrategy {
     }
 
     function getReward() internal {
-        if(getStakingPendingProfit() > 0) {staker.harvest();}
-        uint wethBal = weth.balanceOf(address(this));
+        if (getStakingPendingProfit() > 0) {
+            staker.harvest();
+        }
+        uint256 wethBal = weth.balanceOf(address(this));
         if (wethBal > 0) {
             //Sell any weth for looks via univ2
             router.swapExactTokensForTokens(wethBal, 0, _getBuyPath(), address(this), block.timestamp);
@@ -193,7 +195,7 @@ contract LooksStakerStrategy is BaseStrategy {
         //Withdraw all the staked Looks and claim any pending WETH
         staker.withdrawAll(true);
         //Transfer all gotten weth to new strat,we arent compounding on preparemigration
-        weth.transfer(_newStrategy,weth.balanceOf(address(this)));
+        weth.transfer(_newStrategy, weth.balanceOf(address(this)));
     }
 
     // Override this to add all tokens/tokenized positions this contract manages
