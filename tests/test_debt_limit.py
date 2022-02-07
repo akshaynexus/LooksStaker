@@ -7,7 +7,7 @@ second_deposit_amount = Wei("160000 ether")
 final_amount = Wei("80000 ether")
 
 
-def test_increasing_debt_limit(gov, whale, currency, vault, stakingstrategy):
+def test_increasing_debt_limit(gov, whale, currency, vault, stakingstrategy, chain):
     currency.approve(vault, 2 ** 256 - 1, {"from": gov})
     # Fund gov with enough tokens
     currency.approve(whale, deposit_amount + second_deposit_amount, {"from": whale})
@@ -22,6 +22,8 @@ def test_increasing_debt_limit(gov, whale, currency, vault, stakingstrategy):
     # deposit 40k in total to test
     vault.deposit(deposit_amount, {"from": gov})
     stakingstrategy.harvest()
+    chain.sleep(20)
+    chain.mine(1)
     assert stakingstrategy.estimatedTotalAssets() >= deposit_amount
 
     # User shouldn't be able to deposit 40k more
@@ -30,6 +32,9 @@ def test_increasing_debt_limit(gov, whale, currency, vault, stakingstrategy):
 
     vault.setDepositLimit(second_deposit_amount, {"from": gov})
     vault.deposit(deposit_amount, {"from": gov})
+
+    chain.sleep(20)
+    chain.mine(1)
     stakingstrategy.harvest()
     assert (
         stakingstrategy.estimatedTotalAssets() >= final_amount

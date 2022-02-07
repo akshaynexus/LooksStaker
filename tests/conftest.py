@@ -1,21 +1,5 @@
 import pytest
-from brownie import config, AlchemixStakingStrategy, AlchemixETHStrategy
-
-fixtures = "currency", "whale", "strategyBase"
-params = [
-    pytest.param(
-        "0xdBdb4d16EdA451D0503b854CF79D55697F90c8DF",
-        "0xcce949De564fE60e7f96C85e55177F8B9E4CF61b",
-        AlchemixStakingStrategy,
-        id="ALCX",
-    ),
-    # pytest.param(
-    #     "0xc3f279090a47e80990fe3a9c30d24cb117ef91a8",
-    #     "0xf36B9a3848541297d824b346e590351F47742986",
-    #     AlchemixETHStrategy,
-    #     id="ALCX-WETH",
-    # ),
-]
+from brownie import config, LooksStakerStrategy
 
 
 @pytest.fixture
@@ -65,24 +49,13 @@ def rewards(gov):
 
 @pytest.fixture
 def currency(interface):
-    yield interface.ERC20("0xdBdb4d16EdA451D0503b854CF79D55697F90c8DF")
+    yield interface.ERC20("0xf4d2888d29D722226FafA5d9B24F9164c092421E")
 
 
 @pytest.fixture
-def currencyLP(interface):
-    yield interface.ERC20("0xc3f279090a47e80990fe3a9c30d24cb117ef91a8")
-
-
-@pytest.fixture
-def whaleLP(accounts, web3, currency, chain):
-    # Random address with good amount of lps
-    yield accounts.at("0xA4fc358455Febe425536fd1878bE67FfDBDEC59a", force=True)
-
-
-@pytest.fixture
-def whale(accounts, web3, currency, chain):
-    # Team address,has plenty ALCX
-    yield accounts.at("0x8392F6669292fA56123F71949B52d883aE57e225", force=True)
+def whale(accounts):
+    # Airdrop contract,has plenty tokens
+    yield accounts.at("0xA35dce3e0E6ceb67a30b8D7f4aEe721C949B5970", force=True)
 
 
 @pytest.fixture
@@ -96,24 +69,7 @@ def vault(pm, gov, rewards, guardian, currency):
 
 
 @pytest.fixture
-def vaultlp(pm, gov, rewards, guardian, currencyLP):
-    Vault = pm(config["dependencies"][0]).Vault
-    vault = gov.deploy(Vault)
-    vault.initialize(currencyLP, gov, rewards, "", "", guardian)
-    vault.setManagementFee(0, {"from": gov})
-    vault.setDepositLimit(2 ** 256 - 1, {"from": gov})
-    yield vault
-
-
-@pytest.fixture
-def stakingstrategy(strategist, keeper, vault, AlchemixStakingStrategy):
-    strategy = strategist.deploy(AlchemixStakingStrategy, vault)
-    strategy.setKeeper(keeper)
-    yield strategy
-
-
-@pytest.fixture
-def strategylp(strategist, keeper, vaultlp, AlchemixETHStrategy):
-    strategy = strategist.deploy(AlchemixETHStrategy, vaultlp)
+def stakingstrategy(strategist, keeper, vault):
+    strategy = strategist.deploy(LooksStakerStrategy, vault)
     strategy.setKeeper(keeper)
     yield strategy
